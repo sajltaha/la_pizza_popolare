@@ -36,7 +36,7 @@ const httpRequestDurationSeconds = new promClient.Histogram({
   name: "http_request_duration_seconds",
   help: "HTTP request duration in seconds",
   labelNames: ["method", "route", "status"],
-  buckets: [0.05, 0.1, 0.2, 0.3, 0.5, 1, 2, 5],
+  buckets: [0.05, 0.1, 0.2, 0.3, 0.35, 0.5, 1, 2, 5],
 });
 
 register.registerMetric(httpRequestsTotal);
@@ -184,31 +184,6 @@ app.get("/api/pizzas", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch pizzas",
-      error: error.message,
-    });
-  }
-});
-
-app.get("/api/pizzas/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ message: "Invalid pizza id" });
-  }
-
-  try {
-    const result = await query(
-      "SELECT id, name, toppings, price, description, img FROM pizzas WHERE id = $1",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Pizza not found" });
-    }
-
-    return res.status(200).json(result.rows[0]);
-  } catch (error) {
-    return res.status(500).json({
-      message: "Failed to fetch pizza",
       error: error.message,
     });
   }
