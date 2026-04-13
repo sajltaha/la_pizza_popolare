@@ -46,6 +46,7 @@ export const enterShop = (
   let userObj = {
     username: loginUsername,
     password: loginPassword,
+    email: "",
     cart: [],
   };
 
@@ -62,12 +63,13 @@ export const enterShop = (
     if (!userExists) {
       notify("Wrong username or password!", "err");
     } else {
-      let cart = usersList.find(
+      const userFromStorage = usersList.find(
         (user) =>
           user.username === userObj.username &&
           user.password === userObj.password
-      ).cart;
-      userObj.cart = cart;
+      );
+      userObj.cart = userFromStorage.cart;
+      userObj.email = userFromStorage.email;
       localStorage.setItem("Current user", JSON.stringify(userObj));
       navigate("/shopping");
     }

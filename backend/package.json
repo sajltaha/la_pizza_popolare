@@ -1,0 +1,16 @@
+{
+  "name": "pizza-backend",
+  "version": "1.0.0",
+  "description": "Backend API for pizza app with Prometheus metrics",
+  "main": "src/server.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.3",
+    "prom-client": "^15.1.3"
+  }
+}

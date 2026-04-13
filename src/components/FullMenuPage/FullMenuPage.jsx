@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import api from "../../libs/api.json";
 import style from "./FullMenuPage.module.css";
 import { useNavigate } from "react-router-dom";
 import { addPizzaToCart } from "../../libs/Menu_functions";
@@ -7,45 +6,72 @@ import MenuModal from "../ShoppingPage/nodes/Menu/nodes/MenuModal/MenuModal";
 import FullMenuContentAll from "./nodes/FullMenuContentAll/FullMenuContentAll";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { fetchPizzas } from "../../libs/backendApi";
 
 export default function FullMenuPage() {
+  const [allPizzas, setAllPizzas] = useState([]);
   const [data, setData] = useState([]);
   const [pizza, setPizza] = useState("");
   const [countInput, setCountInput] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [selectValue, setSelectValue] = useState("All");
   const [alert, setAlert] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const navigate = useNavigate();
 
   const notify = () => toast.success("Succesfully added to cart!");
 
   useEffect(() => {
-    setData(api);
+    let ignore = false;
+
+    const loadPizzas = async () => {
+      try {
+        const pizzas = await fetchPizzas();
+
+        if (ignore) {
+          return;
+        }
+
+        setAllPizzas(pizzas);
+        setData(pizzas);
+        setApiError("");
+      } catch (error) {
+        if (ignore) {
+          return;
+        }
+
+        setApiError("Failed to load pizzas from backend API.");
+        toast.error("Unable to load full menu.");
+      }
+    };
+
+    loadPizzas();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   useEffect(() => {
-    setData(
+    const filteredData = searchInput
+      ? allPizzas.filter((pizza) =>
+          pizza.name.toLowerCase().includes(searchInput.toLowerCase())
+        )
+      : allPizzas;
+
+    const sortedData =
       selectValue === "All"
-        ? api
-        : [...data].sort((a, b) =>
+        ? filteredData
+        : [...filteredData].sort((a, b) =>
             selectValue === "Price"
               ? a.price - b.price
               : a.name.localeCompare(b.name)
-          )
-    );
-  }, [selectValue]);
+          );
 
-  useEffect(() => {
-    const filteredData = searchInput
-      ? api.filter((pizza) =>
-          pizza.name.toLowerCase().includes(searchInput.toLowerCase())
-        )
-      : api;
-
-    setData(filteredData);
-    setAlert(searchInput && filteredData.length === 0);
-  }, [searchInput]);
+    setData(sortedData);
+    setAlert(Boolean(searchInput) && sortedData.length === 0);
+  }, [allPizzas, searchInput, selectValue]);
 
   const showPizzaData = (id) => {
     const findPizza = data.find((pizza) => pizza.id === id);
@@ -74,6 +100,9 @@ export default function FullMenuPage() {
             id nulla. Risus convallis iaculis risus ac aliquam sit ultricies.
             Adipiscing adipiscing pellentesque tincidunt vitae. Aliquam dolor
             egestas nam congue elit dolor.
+          </p>
+          <p style={{ color: "crimson", display: apiError ? "block" : "none" }}>
+            {apiError}
           </p>
         </div>
         <FullMenuContentAll

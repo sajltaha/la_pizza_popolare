@@ -4,6 +4,7 @@ export default function CartPageAction({
   notify,
   totalPrice,
   confirmOrder,
+  isSubmitting,
   promoCount,
   promo,
   setPromo,
@@ -15,14 +16,11 @@ export default function CartPageAction({
         <p className={style.action_title}>Your Subtotal</p>
         <p className={style.action_subtitle}>Subtotal ~ ${totalPrice}</p>
         <button
-          onClick={() => {
-            confirmOrder();
-            notify("Thank you for order!", "succ");
-          }}
+          onClick={confirmOrder}
           className={style.action_button}
-          disabled={totalPrice === 0}
+          disabled={totalPrice === 0 || isSubmitting}
         >
-          Confirm Order
+          {isSubmitting ? "Placing..." : "Confirm Order"}
         </button>
       </div>
       <div className={style.cart_content_action_promo}>

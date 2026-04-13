@@ -1,0 +1,14 @@
+groups:
+  - name: pizza_app_alerts
+    rules:
+      - alert: PizzaCatalogHighLatencyWarning
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{method="GET",route="/api/pizzas"}[5m]))) > 0.35
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: PizzaBackendDownCritical
+        expr: up{job="pizza-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical

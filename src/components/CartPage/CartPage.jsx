@@ -5,12 +5,14 @@ import CartPageAction from "./nodes/CartPageAction/CartPageAction";
 import CartPageItem from "./nodes/CartPageItem/CartPageItem";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createOrder } from "../../libs/backendApi";
 
 export default function CartPage() {
   const [data, setData] = useState({ cart: [] });
   const [totalPrice, setTotalPrice] = useState(0);
   const [promo, setPromo] = useState("");
   const [promoCount, setPromoCount] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,9 +21,14 @@ export default function CartPage() {
   }, []);
 
   useEffect(() => {
-    let price = calculatePrice();
-    setTotalPrice(price);
-  }, [data]);
+    const basePrice = data.cart.reduce(
+      (total, item) => total + item.price * item.count,
+      0
+    );
+
+    const finalPrice = promoCount ? basePrice - basePrice * 0.1 : basePrice;
+    setTotalPrice(finalPrice);
+  }, [data, promoCount]);
 
   useEffect(() => {
     if (totalPrice === 0) {
@@ -29,39 +36,64 @@ export default function CartPage() {
     }
   }, [totalPrice]);
 
-  const calculatePrice = () => {
-    const currentUser = JSON.parse(localStorage.getItem("Current user"));
-    let price = currentUser.cart.reduce(
-      (total, item) => total + item.price * item.count,
-      0
-    );
-    if (promoCount) {
-      price -= price * 0.1;
-    }
-    return price;
-  };
-
   const addPromo = () => {
     setPromoCount(true);
-    setTotalPrice(totalPrice - totalPrice * 0.1);
   };
 
-  const confirmOrder = () => {
+  const clearLocalCart = () => {
     const currentUser = JSON.parse(localStorage.getItem("Current user"));
-    const users = JSON.parse(localStorage.getItem("Users"));
+    const users = JSON.parse(localStorage.getItem("Users")) || [];
+
     setTotalPrice(0);
     setPromo("");
     setPromoCount(false);
     currentUser.cart = [];
-    users.find((user) => currentUser.username === user.username).cart = [];
+    const userInList = users.find((user) => currentUser.username === user.username);
+    if (userInList) {
+      userInList.cart = [];
+    }
     localStorage.setItem("Current user", JSON.stringify(currentUser));
     localStorage.setItem("Users", JSON.stringify(users));
     setData(currentUser);
   };
 
+  const confirmOrder = async () => {
+    const currentUser = JSON.parse(localStorage.getItem("Current user"));
+
+    if (!currentUser?.cart?.length) {
+      notify("Cart is empty.", "info");
+      return;
+    }
+
+    const orderPayload = {
+      customerName: currentUser.username || "Guest User",
+      customerEmail:
+        currentUser.email ||
+        `${currentUser.username || "guest"}@pizza.local`,
+      promoCode: promoCount ? promo : "",
+      items: currentUser.cart.map((item) => ({
+        pizzaId: item.id,
+        quantity: item.count,
+      })),
+    };
+
+    try {
+      setIsSubmitting(true);
+      const response = await createOrder(orderPayload);
+      clearLocalCart();
+      notify(`Order #${response.order.id} confirmed!`, "succ");
+    } catch (error) {
+      notify(error.message || "Order failed. Try again.", "err");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const notify = (text, type) => {
     if (type === "info") {
       toast.info(text);
+    } else if (type === "err") {
+      toast.error(text);
     } else {
       toast.success(text);
     }
@@ -97,6 +129,7 @@ export default function CartPage() {
           </p>
         </div>
         <CartPageAction
+          isSubmitting={isSubmitting}
           totalPrice={totalPrice}
           confirmOrder={confirmOrder}
           promo={promo}

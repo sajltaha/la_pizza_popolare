@@ -1,5 +1,4 @@
 import style from "./Menu.module.css";
-import api from "../../../../libs/api.json";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addPizzaToCart } from "../../../../libs/Menu_functions";
@@ -7,19 +6,46 @@ import MenuModal from "./nodes/MenuModal/MenuModal";
 import MenuContentAll from "./nodes/MenuContentAll/MenuContentAll";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { fetchPizzas } from "../../../../libs/backendApi";
 
 export default function Menu() {
   const [dataBig, setDataBig] = useState([]);
   const [dataMid, setDataMid] = useState([]);
   const [dataSmall, setDataSmall] = useState([]);
+  const [apiError, setApiError] = useState("");
   const [pizza, setPizza] = useState("");
   const [input, setInput] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setDataBig(api.slice(0, 8));
-    setDataMid(api.slice(0, 4));
-    setDataSmall(api.slice(0, 3));
+    let ignore = false;
+
+    const loadPizzas = async () => {
+      try {
+        const pizzas = await fetchPizzas();
+        if (ignore) {
+          return;
+        }
+
+        setDataBig(pizzas.slice(0, 8));
+        setDataMid(pizzas.slice(0, 4));
+        setDataSmall(pizzas.slice(0, 3));
+        setApiError("");
+      } catch (error) {
+        if (ignore) {
+          return;
+        }
+
+        setApiError("Menu data is currently unavailable.");
+        toast.error("Failed to load pizza menu from backend API.");
+      }
+    };
+
+    loadPizzas();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const req_addPizzaToCart = () => {
@@ -50,6 +76,9 @@ export default function Menu() {
           nulla. Risus convallis iaculis risus ac aliquam sit ultricies.
           Adipiscing adipiscing pellentesque tincidunt vitae. Aliquam dolor
           egestas nam congue elit dolor.
+        </p>
+        <p style={{ color: "crimson", display: apiError ? "block" : "none" }}>
+          {apiError}
         </p>
       </div>
 
