@@ -9,7 +9,6 @@ COPY backend/src ./src
 COPY backend/db ./db
 COPY src/libs/api.json ./data/api.json
 
-ENV NODE_ENV=production
 ENV PORT=8080
 ENV PIZZA_SEED_FILE=/app/data/api.json
 
